@@ -57,4 +57,4 @@ g++ main.cpp -luuid -std=c++11 -O2 `pkg-config opencv --cflags --libs` -w
 Linuxのコマンドを使うので、Windowsでは難しいです。
 
 ## ソフトウェアライセンス
-[MIT License](https://github.com/hikaright/minecraft_ground_generator/blob/master/LICENCE)
+[MIT License](https://github.com/hikaright/minecraft_ground_generator/blob/master/LICENSE)
