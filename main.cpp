@@ -1,97 +1,119 @@
 #include <opencv2/opencv.hpp>
 #include <stdlib.h>
 #include "manifest_json.cpp"
+
 using namespace cv;
 using namespace std;
 
-int main(void){
-    Mat img;
-    img = imread("image.png");
-    Mat height(img.rows, img.cols, CV_32S);
+class MineGround{
+    public:
+        Mat img;
+        Mat height;
+        int h,
+            size = 0,
+            gnd = 4;
 
-    //cout << (1<<16) << endl;
-
-    int x;
-    int h=0;
-    double u=0.01;
-    unsigned char b, g, r;
-    for(int i=0; i<img.rows; i++){
-        for(int j=0; j<img.cols; j++){
-            b = img.at<Vec3b>(i, j)[0];
-            g = img.at<Vec3b>(i, j)[1];
-            r = img.at<Vec3b>(i, j)[2];
-            x = (1<<16)*r + (1<<8)*g + b;
-            if(r != 128){
-                if(x < (1<<23))
-                    h = x * u;
-                else if(x == (1<<23))
-                    h = 0;
-                else
-                    h = (x - (1<<24)) * u;
-                height.at<int>(i, j) =  (int)h;
-            }else
-                h = 0;
+        void open(string filename){
+            this->img = imread(filename);
+            this->height = Mat(this->img.rows, this->img.cols, CV_32S);
         }
-    }
 
-    //マイクラブロックコマンド生成
-    system("rm -rf functions");
-    system("mkdir functions");
-    int gnd = 4;
-    int size = 0;
-    for(int i=0; i<img.rows; i++){
-        for(int j=0; j<img.cols; j++){
-            h = height.at<int>(i, j);
-            //if(h != 0)
-                size++;
-        }
-    }
-    int loop = size/10000 + 1;
-    char file_name[64];
-    int i=0;
-    int k=0;
-    printf("height.rows=%d, height.cols=%d\n", height.rows, height.cols);
-    for(int lp=0; lp<loop; lp++){
-        sprintf(file_name, "functions/func%d.mcfunction", lp);
-        FILE *fp;
-        if(fp = fopen(file_name, "w")){
-            while(i<height.rows*height.cols){
-                h = height.at<int>(i%height.rows, i/height.rows);
-                //printf("%d: %d\n", k, h);
-                if(h != 0){
-                    fprintf(fp, "fill %d %d %d %d %d %d dirt\n", i/height.rows, gnd, i%height.rows, i/height.rows, gnd+h/256, i%height.rows);
-                }else{
-                    fprintf(fp, "setblock %d %d %d water\n", i/height.rows, gnd, i%height.rows);
-                }
-                k++;
-                i++;
-                if((k+1)%10000 == 0){ 
-                    //h || k++;
-                    break;
+        void setHeight(){
+            double u = 0.01;
+            Scalar color;
+            for(int i = 0; i < this->img.rows; i++){
+                for(int j = 0; j < this->img.cols; j++){
+                    int x;
+                    color = this->img.at<Vec3b>(i, j);
+                    x = (1<<16)*color[2] + (1<<8)*color[1] + color[0];
+                    if(color[2] != 128){
+                        if(x < (1<<23))
+                            this->h = x * u;
+                        else if(x == (1<<23))
+                            this->h = 0;
+                        else
+                            this->h = (x - (1<<24)) * u;
+                        height.at<int>(i, j) =  (int)h;
+                    }else
+                        this->h = 0;
                 }
             }
-            fclose(fp);
         }
-    }
 
-    char* manifest_func = manifest("ground");
-    char manifest_json_filename[] = "manifest.json";
-    FILE* fp = fopen(manifest_json_filename, "w");
-    if(fp){
-        fputs(manifest_func, fp);
-        fclose(fp);
-    }
+        void makecom(){
+            system("rm -rf functions");
+            system("mkdir functions");
+            for(int i = 0; i < this->img.rows; i++){
+                for(int j = 0; j < this->img.cols; j++){
+                    this->h = this->height.at<int>(i, j);
+                    this->size++;
+                }
+            }
+            int loop = this->size/10000 + 1;
+            char file_name[64];
+            int i=0;
+            int k=0;
+        }
 
-    resize(img, img, Size(300, 300));
-    imwrite("pack_icon.png", img);
+        void savefile(){
+            char filename[100];
+            int loop = this->size/10000 + 1;
+            int i = 0;
+            int k = 0;
+            printf("行=%d, 列=%d\n", this->height.rows, this->height.cols);
+            for(int lp = 0; lp < loop; lp++){
+                sprintf(filename, "functions/func%d.mcfunction", lp);
+                FILE *fp;
+                if(fp = fopen(filename, "w")){
+                    while(i<height.rows*height.cols){
+                        h = this->height.at<int>(i % this->height.rows, i / this->height.rows);
+                        if(h != 0){
+                            fprintf(fp, "fill %d %d %d %d %d %d dirt\n", i / this->height.rows, this->gnd, i % this->height.rows, i / this->height.rows, this->gnd+h/256, i % this->height.rows);
+                        }else{
+                            fprintf(fp, "setblock %d %d %d water\n", i / this->height.rows, this->gnd, i % this->height.rows);
+                        }
+                        k++;
+                        i++;
+                        if((k+1)%10000 == 0){
+                            break;
+                        }
+                    }
+                    fclose(fp);
+                }
+            }
+            resize(this->img, this->img, Size(300, 300));
+            imwrite("pack_icon.png", this->img);
+        }
 
-    system("rm func.mcpack");
-    system("zip -r func.mcpack functions/ manifest.json pack_icon.png");
-    system("rm -rf functions/");
-    system("rm pack_icon.png");
-    system("rm manifest.json");
+        void saveconfigfile(string funcname, string filename){
+            FILE* fp = fopen(filename.c_str(), "w");
+            if(fp){
+                fputs(manifest((char*)funcname.c_str()), fp);
+                fclose(fp);
+            }else
+                exit(EXIT_FAILURE);
+        }
 
-    imwrite("gray.png", height);
+        void run(){
+            system("rm func.mcpack");
+            system("zip -r func.mcpack functions/ manifest.json pack_icon.png");
+            system("rm -rf functions/");
+            system("rm pack_icon.png");
+            system("rm manifest.json");
+            imwrite("gray.png", this->height);
+        }
+
+    private:
+};
+
+int main(void){
+    MineGround mg;
+    mg.open("image.png");
+    mg.setHeight();
+    mg.makecom();
+    mg.savefile();
+    mg.saveconfigfile("ground", "manifest.json");
+    mg.run();
 
     return 0;
 }

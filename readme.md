@@ -9,6 +9,19 @@
 
 ![津軽海峡](https://pbs.twimg.com/media/EDdzGuHUYAE7idM?format=jpg&name=large)
 
+## 依存ライブラリのインストール & git clone
+```sh
+sudo apt update
+sudo apt install git libopencv-dev uuid-dev -y
+git clone https://github.com/Himeyama/minecraft_ground_generator
+cd minecraft_ground_generator
+```
+
+## コンパイル
+```
+make
+```
+
 ## 現在の実装
 現在の実装では引数で指定することなく、バージョンや名前の指定はできません。バージョンは0.0.1で名前はすべてgroundになります。
 
@@ -55,11 +68,6 @@ Minecraftで関数を呼び出すには、
 ...
 ```
 のようにして実行されます。
-
-## コンパイル
-```
-g++ main.cpp -luuid -std=c++11 -O2 `pkg-config opencv --cflags --libs` -w
-```
 
 (いろいろインストールして)ubuntuでコンパイルしているので他のOSでできるかはわかりません。
 Linuxのコマンドを使うので、Windowsでは難しいです。
