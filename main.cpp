@@ -49,10 +49,6 @@ class MineGround{
                     this->size++;
                 }
             }
-            int loop = this->size/10000 + 1;
-            char file_name[64];
-            int i=0;
-            int k=0;
         }
 
         void savefile(){
@@ -68,7 +64,7 @@ class MineGround{
                     while(i<height.rows*height.cols){
                         h = this->height.at<int>(i % this->height.rows, i / this->height.rows);
                         if(h != 0){
-                            fprintf(fp, "fill %d %d %d %d %d %d dirt\n", i / this->height.rows, this->gnd, i % this->height.rows, i / this->height.rows, this->gnd+h/256, i % this->height.rows);
+                            fprintf(fp, "fill %d %d %d %d %d %d dirt\n", i / this->height.rows, this->gnd, i % this->height.rows, i / this->height.rows, this->gnd+h/32, i % this->height.rows);
                         }else{
                             fprintf(fp, "setblock %d %d %d water\n", i / this->height.rows, this->gnd, i % this->height.rows);
                         }
@@ -95,6 +91,11 @@ class MineGround{
         }
 
         void run(){
+            setHeight();
+            makecom();
+            savefile();
+            saveconfigfile("ground", "manifest.json");
+
             system("rm func.mcpack");
             system("zip -r func.mcpack functions/ manifest.json pack_icon.png");
             system("rm -rf functions/");
@@ -108,11 +109,7 @@ class MineGround{
 
 int main(void){
     MineGround mg;
-    mg.open("image.png");
-    mg.setHeight();
-    mg.makecom();
-    mg.savefile();
-    mg.saveconfigfile("ground", "manifest.json");
+    mg.open("sakurajima.png");
     mg.run();
 
     return 0;
